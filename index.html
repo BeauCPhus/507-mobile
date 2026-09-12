@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111111">
+<title>507 Movements Mobile</title>
+<style>
+:root{--bg:#111;--panel:#1b1b1b;--panel2:#242424;--text:#f4f4f4;--muted:#aaa;--line:#383838;--accent:#f0c24b}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:10;background:rgba(17,17,17,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 12px 10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:22px;margin:0}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.badge{border:1px solid #555;border-radius:999px;padding:5px 9px;font-size:12px;color:#ccc}
+.searchrow{display:grid;grid-template-columns:1fr 82px 52px;gap:8px;margin-top:10px}
+input,button{min-height:48px;border:1px solid #444;border-radius:12px;background:var(--panel2);color:var(--text);font-size:17px;padding:0 12px}
+button{font-weight:700}
+button:active{transform:scale(.98)}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:10px 0 0;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;min-height:38px;padding:0 12px;font-size:14px;border-radius:999px}
+.chip.active{background:var(--accent);color:#111;border-color:var(--accent)}
+.progress{font-size:12px;color:var(--muted);padding-top:8px;display:flex;justify-content:space-between;gap:10px}
+main{padding:14px}
+.status{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);cursor:pointer;position:relative}
+.card img{width:100%;aspect-ratio:1/1;object-fit:contain;background:white;display:block}
+.meta{padding:9px 10px 11px;min-height:84px}
+.num{font-size:27px;font-weight:800;line-height:1}
+.tags{font-size:12px;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snip{font-size:12px;color:#d0d0d0;margin-top:4px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.star{position:absolute;right:8px;top:8px;width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;background:rgba(17,17,17,.78);font-size:22px;z-index:2}
+.star.on{color:var(--accent)}
+.empty{display:none;text-align:center;color:var(--muted);padding:40px 10px}
+.viewer{display:none;position:fixed;inset:0;z-index:30;background:var(--bg);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.viewer.show{display:flex;flex-direction:column}
+.viewerbar{min-height:58px;display:grid;grid-template-columns:58px 1fr 58px;align-items:center;border-bottom:1px solid var(--line);padding:0 6px}
+.viewerbar button{min-height:44px;padding:0;font-size:24px;border:0;background:transparent}
+.viewertitle{text-align:center;font-size:21px;font-weight:800}
+.stage{flex:1;min-height:0;overflow:auto;padding:10px 12px}
+.stage img{width:100%;max-height:57vh;object-fit:contain;background:white;border-radius:12px;display:block}
+.description{font-size:18px;line-height:1.42;padding:14px 4px 8px;color:#f1f1f1}
+.loading{color:var(--muted);font-style:italic}
+.vtags{font-size:13px;color:#bbb;padding:0 4px 10px}
+.vieweractions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 12px}
+.vieweractions button{min-height:48px;font-size:15px}
+.nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px}
+.nav button{min-height:58px;font-size:18px}
+@media (min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div><h1>507 Movements</h1><div class="sub">mobile reader · all 507</div></div>
+    <span class="badge">V3</span>
+  </div>
+  <div class="searchrow">
+    <input id="search" placeholder="cam, reciprocating, pump…" autocomplete="off">
+    <button id="go">GO</button>
+    <button id="random" title="Random movement">🎲</button>
+  </div>
+  <div id="filters" class="filters"></div>
+  <div class="progress"><span id="indexState">Text index: starting…</span><span id="networkState"></span></div>
+</header>
+
+<main>
+  <div class="status"><span id="count"></span><button id="favOnly" class="chip">★ Favorites</button></div>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty">Nothing matched that search.</div>
+</main>
+
+<section id="viewer" class="viewer" aria-hidden="true">
+  <div class="viewerbar">
+    <button id="close">×</button>
+    <div id="viewerTitle" class="viewertitle">Movement 1</div>
+    <button id="source">↗</button>
+  </div>
+  <div class="stage">
+    <img id="bigImg" alt="">
+    <div id="description" class="description loading">Loading description…</div>
+    <div id="vtags" class="vtags"></div>
+  </div>
+  <div class="vieweractions">
+    <button id="favBtn">☆ FAVORITE</button>
+    <button id="random2">🎲 RANDOM</button>
+    <button id="original">ORIGINAL ↗</button>
+  </div>
+  <div class="nav">
+    <button id="prev">‹ PREV</button>
+    <button id="next">NEXT ›</button>
+  </div>
+</section>
+
+<script>
+const MAX=507;
+const categories={"Cams":[95,96,97,117,130,138,149,150,165,217,272,276],"Clutches":[47,48,52,53,361],"Counters":[63,64,65,66,67,68,69,70,71],"Cranks":[92,93,98,100,131,145,146,156,158,166,175,176,220,230,231,268,279,354,401,126,154,157,168,169],"Differentials":[57,58,59,60,61,62,260,264],"Eccentrics":[89,90,91,135,137],"Escapements":[234,238,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,36,37,38,309,310,311,312,313,314,396,402],"Gearing":[7,24,26,27,28,29,31,32,33,34,35,37,38,39,43,44,45,49,53,54,55,57,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,79,80,81,82,83,84,114,143,151,191,197,200,201,202,219,221,222,223,226,412,413,414,495],"Governors":[147,161,162,163,170,274,287,357],"Intermittent":[63,64,65,66,67,68,69,70,71,73,74,75,76,88,211,235,241,364,398],"Joints":[51,245,248,249],"Levers":[126,137,140,155,156,157,164],"Parallel motion":[328,329,332,333,334,335,336,337,338,339,340,341,343],"Pulleys":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,58,59,60,61,62,243,255,256,257,258,259,267],"Pumps":[86,127,283,448,449,450,451,452,453,454,455,456,462,465,473,476],"Rack & pinion":[81,113,114,115,118,119,127,139,197,198,199,269,283],"Ratchets":[49,75,76,78,79,80,82,206,225,236,271],"Screws":[108,110,111,151,266,443],"Steam engines":[175,326,327,328,329,330,331,332,334,335,336,337,338,339,340,341,342,343,344,345,346,421,422,423,424],"Water raising":[439,441,442,443,444,457,458,459,460,461]};
+const movementTags=Array.from({length:MAX+1},()=>[]);
+for(const [name,nums] of Object.entries(categories)) for(const n of nums) if(n<=MAX) movementTags[n].push(name);
+
+const pad=n=>String(n).padStart(3,'0');
+const imgUrl=n=>`https://507movements.com/img/mm_${pad(n)}.png`;
+const pageUrl=n=>`https://507movements.com/mm_${pad(n)}.html`;
+const readerUrl=n=>`https://r.jina.ai/http://507movements.com/mm_${pad(n)}.html`;
+
+const grid=document.getElementById('grid'), search=document.getElementById('search'),
+filters=document.getElementById('filters'), count=document.getElementById('count'),
+empty=document.getElementById('empty'), viewer=document.getElementById('viewer'),
+bigImg=document.getElementById('bigImg'), vtags=document.getElementById('vtags'),
+viewerTitle=document.getElementById('viewerTitle'), favOnly=document.getElementById('favOnly'),
+description=document.getElementById('description'), indexState=document.getElementById('indexState'),
+networkState=document.getElementById('networkState');
+
+let activeCategory='All', favoritesOnly=false, current=1, indexing=false;
+let favorites=new Set(JSON.parse(localStorage.getItem('507-favorites')||'[]'));
+let descriptions=JSON.parse(localStorage.getItem('507-descriptions-v1')||'{}');
+
+function saveFavs(){localStorage.setItem('507-favorites',JSON.stringify([...favorites].sort((a,b)=>a-b)))}
+function saveDescriptions(){try{localStorage.setItem('507-descriptions-v1',JSON.stringify(descriptions))}catch(e){}}
+function tagText(n){return movementTags[n].length?movementTags[n].join(' · '):'Movement'}
+
+function extractDescription(text,n){
+  const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const re=new RegExp('^'+n+'\\.\\s+');
+  let idx=lines.findIndex(line=>re.test(line));
+  if(idx<0) return '';
+  let parts=[lines[idx].replace(re,'')];
+  for(let i=idx+1;i<Math.min(lines.length,idx+8);i++){
+    const line=lines[i];
+    if(/^#+\s/.test(line)||/^\* \*/.test(line)||/^About$/.test(line)||/^Follow /.test(line)||/^Notes:/.test(line)) break;
+    if(/^\d+\.\s/.test(line)) break;
+    if(line.startsWith('[') || line==='Animated Original') continue;
+    parts.push(line);
+  }
+  return parts.join(' ').replace(/\s+/g,' ').trim();
+}
+
+async function fetchDescription(n){
+  if(descriptions[n]) return descriptions[n];
+  try{
+    const r=await fetch(readerUrl(n),{cache:'force-cache'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const text=await r.text();
+    const d=extractDescription(text,n);
+    if(d){descriptions[n]=d; if(n%10===0)saveDescriptions(); return d;}
+  }catch(e){}
+  return '';
+}
+
+function makeCard(n){
+  const c=document.createElement('article'); c.className='card'; c.dataset.n=n;
+  const sn=descriptions[n]?`<div class="snip">${escapeHtml(descriptions[n])}</div>`:'';
+  c.innerHTML=`<button class="star ${favorites.has(n)?'on':''}" aria-label="Favorite">${favorites.has(n)?'★':'☆'}</button>
+  <img loading="lazy" src="${imgUrl(n)}" alt="Movement ${n}">
+  <div class="meta"><div class="num">${n}</div><div class="tags">${tagText(n)}</div>${sn}</div>`;
+  c.querySelector('.star').onclick=e=>{e.stopPropagation();toggleFavorite(n)};
+  c.onclick=()=>openMovement(n); return c;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function matches(n,q){
+  if(favoritesOnly&&!favorites.has(n)) return false;
+  if(activeCategory!=='All'&&!movementTags[n].includes(activeCategory)) return false;
+  if(!q) return true;
+  if(/^\d+$/.test(q)) return String(n).includes(q);
+  const hay=(movementTags[n].join(' ')+' '+(descriptions[n]||'')+' movement '+n).toLowerCase();
+  return hay.includes(q);
+}
+function render(){
+  const q=search.value.trim().toLowerCase(); grid.innerHTML=''; let shown=0;
+  for(let n=1;n<=MAX;n++) if(matches(n,q)){grid.appendChild(makeCard(n));shown++}
+  count.textContent=`${shown} movement${shown===1?'':'s'}`;
+  empty.style.display=shown?'none':'block';
+}
+function buildFilters(){
+  for(const name of ['All',...Object.keys(categories)]){
+    const b=document.createElement('button'); b.className='chip'+(name==='All'?' active':''); b.textContent=name;
+    b.onclick=()=>{activeCategory=name;[...filters.children].forEach(x=>x.classList.toggle('active',x===b));render()};
+    filters.appendChild(b);
+  }
+}
+async function openMovement(n){
+  current=Math.max(1,Math.min(MAX,n));
+  viewerTitle.textContent=`Movement ${current}`; bigImg.src=imgUrl(current); bigImg.alt=`Movement ${current}`;
+  vtags.textContent=tagText(current); updateFavButton(); viewer.classList.add('show');
+  viewer.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+  history.replaceState(null,'',`#${current}`);
+  description.className='description loading'; description.textContent='Loading description…';
+  const d=await fetchDescription(current);
+  if(current!==n) return;
+  description.className='description';
+  description.textContent=d||'Description unavailable right now. Tap ORIGINAL ↗ to open the source page.';
+  saveDescriptions();
+}
+function closeViewer(){viewer.classList.remove('show');viewer.setAttribute('aria-hidden','true');document.body.style.overflow='';history.replaceState(null,'',location.pathname)}
+function move(d){openMovement(current+d<1?MAX:current+d>MAX?1:current+d)}
+function toggleFavorite(n){favorites.has(n)?favorites.delete(n):favorites.add(n);saveFavs();updateFavButton();render()}
+function updateFavButton(){document.getElementById('favBtn').textContent=(favorites.has(current)?'★ FAVORITED':'☆ FAVORITE')}
+function go(){
+  const q=search.value.trim();
+  if(/^\d+$/.test(q)){const n=Number(q);if(n>=1&&n<=MAX){openMovement(n);return}}
+  render();
+}
+
+async function buildTextIndex(){
+  if(indexing) return; indexing=true;
+  let have=Object.keys(descriptions).length;
+  indexState.textContent=`Text index: ${have} / ${MAX} cached`;
+  // A modest concurrency keeps this from hammering either service.
+  const missing=[]; for(let n=1;n<=MAX;n++) if(!descriptions[n]) missing.push(n);
+  const workers=Array.from({length:4},async()=>{
+    while(missing.length){
+      const n=missing.shift(); await fetchDescription(n);
+      have=Object.keys(descriptions).length;
+      if(have%5===0){indexState.textContent=`Text index: ${have} / ${MAX} cached`;saveDescriptions()}
+      await new Promise(r=>setTimeout(r,120));
+    }
+  });
+  await Promise.all(workers);
+  saveDescriptions(); have=Object.keys(descriptions).length;
+  indexState.textContent=`Text index: ${have} / ${MAX} cached`;
+  indexing=false; render();
+}
+
+document.getElementById('go').onclick=go;
+search.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+search.addEventListener('input',render);
+document.getElementById('random').onclick=()=>openMovement(1+Math.floor(Math.random()*MAX));
+document.getElementById('random2').onclick=()=>openMovement(1+Math.floor(Math.random()*MAX));
+document.getElementById('close').onclick=closeViewer;
+document.getElementById('prev').onclick=()=>move(-1);
+document.getElementById('next').onclick=()=>move(1);
+document.getElementById('source').onclick=()=>window.open(pageUrl(current),'_blank');
+document.getElementById('original').onclick=()=>window.open(pageUrl(current),'_blank');
+document.getElementById('favBtn').onclick=()=>toggleFavorite(current);
+favOnly.onclick=()=>{favoritesOnly=!favoritesOnly;favOnly.classList.toggle('active',favoritesOnly);render()};
+
+let x0=null;
+viewer.addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+viewer.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>60)move(dx<0?1:-1);x0=null},{passive:true});
+
+window.addEventListener('online',()=>networkState.textContent='online');
+window.addEventListener('offline',()=>networkState.textContent='offline');
+
+buildFilters();render();
+const h=parseInt(location.hash.slice(1),10);if(h>=1&&h<=MAX)openMovement(h);
+setTimeout(buildTextIndex,800);
+</script>
+</body></html>
